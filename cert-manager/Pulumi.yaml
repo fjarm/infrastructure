@@ -1,0 +1,7 @@
+name: cert-manager
+description: A Go program to deploy the cert-manager Helm chart onto a Kubernetes cluster
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: helm-kubernetes-go

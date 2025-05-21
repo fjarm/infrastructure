@@ -1,0 +1,2 @@
+config:
+  cert-manager:k8sNamespace: cert-manager
