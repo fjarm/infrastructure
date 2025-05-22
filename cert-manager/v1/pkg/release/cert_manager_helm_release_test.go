@@ -36,12 +36,11 @@ func (m mocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prope
 
 	// Default behavior for other resources
 	return id, args.Inputs, nil
-	//return args.Name + "_id", args.Inputs, nil
 }
 
 func TestCertManagerHelmRelease(t *testing.T) {
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		_, err := NewCertManagerHelmReleaseArgs()
+		_, err := NewCertManagerHelmReleaseArgs(false, "")
 		if err != nil {
 			t.Errorf("NewCertManagerHelmReleaseArgs failed: %v", err)
 		}

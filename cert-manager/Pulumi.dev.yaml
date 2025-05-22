@@ -1,2 +1,1 @@
-config:
-  cert-manager:k8sNamespace: cert-manager
+{config: {'cert-manager:kind': "true"}}

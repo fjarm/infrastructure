@@ -6,13 +6,15 @@ import (
 )
 
 const (
-	chartName      = "cert-manager"
-	chartNamespace = "cert-manager"
-	chartRepo      = "https://charts.jetstack.io"
-	chartVersion   = "1.17.2"
+	chartName              = "cert-manager"
+	chartNamespace         = "cert-manager"
+	chartRepo              = "https://charts.jetstack.io"
+	chartVersion           = "1.17.2"
+	valuesConfig           = "config"
+	valuesEnableGatewayAPI = "enableGatewayAPI"
 )
 
-func NewCertManagerHelmReleaseArgs() (*helmv3.ReleaseArgs, error) {
+func NewCertManagerHelmReleaseArgs(kind bool, valuesFilePath string) (*helmv3.ReleaseArgs, error) {
 	releaseArgs := &helmv3.ReleaseArgs{
 		Chart: pulumi.String(chartName),
 		RepositoryOpts: &helmv3.RepositoryOptsArgs{
@@ -25,7 +27,12 @@ func NewCertManagerHelmReleaseArgs() (*helmv3.ReleaseArgs, error) {
 		DisableCRDHooks: pulumi.Bool(false),
 		Timeout:         pulumi.Int(120),
 		ValueYamlFiles: pulumi.AssetOrArchiveArray{
-			pulumi.NewFileAsset("cert-manager-values.yaml"),
+			pulumi.NewFileAsset(valuesFilePath),
+		},
+		Values: pulumi.Map{
+			valuesConfig: pulumi.Map{
+				valuesEnableGatewayAPI: pulumi.Bool(!kind),
+			},
 		},
 	}
 	return releaseArgs, nil
