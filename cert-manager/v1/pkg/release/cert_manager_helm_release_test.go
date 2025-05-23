@@ -1,6 +1,7 @@
 package release
 
 import (
+	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"testing"
@@ -20,7 +21,7 @@ func (m mocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prope
 
 	// For the Kubernetes provider specifically, return a canned output
 	if args.TypeToken == "pulumi:providers:kubernetes" {
-		return id, resource.NewPropertyMapFromMap(map[string]interface{}{
+		return id, resource.NewPropertyMapFromMap(map[string]any{
 			"kubeconfig": "mock-kubeconfig-data",
 			"context":    "mock-context",
 		}), nil
@@ -28,9 +29,16 @@ func (m mocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prope
 
 	// For Helm releases, return a mock status output
 	if args.TypeToken == "kubernetes:helm.sh/v3:Release" {
-		return id, resource.NewPropertyMapFromMap(map[string]interface{}{
-			"status": "deployed",
-			"name":   args.Name,
+		return id, resource.NewPropertyMapFromMap(map[string]any{
+			"status": helmv3.ReleaseStatus{
+				AppVersion: pulumi.StringRef("mock-app-version"),
+				Chart:      pulumi.StringRef("mock-chart"),
+				Name:       pulumi.StringRef(args.Name),
+				Namespace:  pulumi.StringRef("mock-namespace"),
+				Version:    pulumi.StringRef("mock-version"),
+				Revision:   pulumi.IntRef(1),
+			},
+			"name": args.Name,
 		}), nil
 	}
 
@@ -40,11 +48,8 @@ func (m mocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prope
 
 func TestCertManagerHelmRelease(t *testing.T) {
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		_, err := NewCertManagerHelmReleaseArgs(false, "")
-		if err != nil {
-			t.Errorf("NewCertManagerHelmReleaseArgs failed: %v", err)
-		}
-		return nil
+		err := DeployCertManager(ctx)
+		return err
 	}, pulumi.WithMocks("project", "stack", mocks{}))
 
 	if err != nil {

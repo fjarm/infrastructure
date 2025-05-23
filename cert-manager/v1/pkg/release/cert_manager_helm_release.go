@@ -1,18 +1,46 @@
 package release
 
 import (
+	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
 const (
-	chartName              = "cert-manager"
-	chartNamespace         = "cert-manager"
-	chartRepo              = "https://charts.jetstack.io"
-	chartVersion           = "1.17.2"
-	valuesConfig           = "config"
-	valuesEnableGatewayAPI = "enableGatewayAPI"
+	chartName                    = "cert-manager"
+	chartNamespace               = "cert-manager"
+	chartRepo                    = "https://charts.jetstack.io"
+	chartVersion                 = "1.17.2"
+	configKind                   = "kind"
+	exportCertManagerNamespace   = "certManagerNamespace"
+	exportCertManagerStatus      = "certManagerStatus"
+	helmReleaseName              = "cert-manager"
+	k8sProviderLogicalNamePrefix = "kubernetes"
+	valuesConfig                 = "config"
+	valuesEnableGatewayAPI       = "enableGatewayAPI"
+	valuesFilePath               = "v1/deploy/release/cert-manager-values.yaml"
 )
+
+func DeployCertManager(ctx *pulumi.Context) error {
+	kind := config.GetBool(ctx, configKind)
+	k8sProvider, err := kubernetes.NewProvider(ctx, k8sProviderLogicalNamePrefix, nil)
+	if err != nil {
+		return err
+	}
+	releaseArgs, err := NewCertManagerHelmReleaseArgs(kind, valuesFilePath)
+	if err != nil {
+		return err
+	}
+	certManager, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(k8sProvider))
+	if err != nil {
+		return err
+	}
+
+	ctx.Export(exportCertManagerNamespace, certManager.Namespace)
+	ctx.Export(exportCertManagerStatus, certManager.Status)
+	return nil
+}
 
 func NewCertManagerHelmReleaseArgs(kind bool, valuesFilePath string) (*helmv3.ReleaseArgs, error) {
 	releaseArgs := &helmv3.ReleaseArgs{
