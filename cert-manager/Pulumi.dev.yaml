@@ -1,1 +1,2 @@
-{config: {'cert-manager:kind': "true"}}
+config:
+  cert-manager:kind: "true"
