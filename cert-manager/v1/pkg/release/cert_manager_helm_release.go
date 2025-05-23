@@ -12,7 +12,7 @@ const (
 	chartNamespace               = "cert-manager"
 	chartRepo                    = "https://charts.jetstack.io"
 	chartVersion                 = "1.17.2"
-	configKind                   = "kind"
+	configKind                   = "cert-manager:kind"
 	exportCertManagerNamespace   = "certManagerNamespace"
 	exportCertManagerStatus      = "certManagerStatus"
 	helmReleaseName              = "cert-manager"
@@ -28,10 +28,7 @@ func DeployCertManager(ctx *pulumi.Context) error {
 	if err != nil {
 		return err
 	}
-	releaseArgs, err := NewCertManagerHelmReleaseArgs(kind, valuesFilePath)
-	if err != nil {
-		return err
-	}
+	releaseArgs := NewCertManagerHelmReleaseArgs(kind, valuesFilePath)
 	certManager, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(k8sProvider))
 	if err != nil {
 		return err
@@ -42,7 +39,7 @@ func DeployCertManager(ctx *pulumi.Context) error {
 	return nil
 }
 
-func NewCertManagerHelmReleaseArgs(kind bool, valuesFilePath string) (*helmv3.ReleaseArgs, error) {
+func NewCertManagerHelmReleaseArgs(kind bool, valuesFilePath string) *helmv3.ReleaseArgs {
 	releaseArgs := &helmv3.ReleaseArgs{
 		Chart: pulumi.String(chartName),
 		RepositoryOpts: &helmv3.RepositoryOptsArgs{
@@ -63,5 +60,5 @@ func NewCertManagerHelmReleaseArgs(kind bool, valuesFilePath string) (*helmv3.Re
 			},
 		},
 	}
-	return releaseArgs, nil
+	return releaseArgs
 }
