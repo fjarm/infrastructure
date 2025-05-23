@@ -1,0 +1,39 @@
+global:
+  leaderElection:
+    namespace: "cert-manager"
+image:
+  tag: "v1.17.2"
+replicaCount: 3
+podDisruptionBudget:
+  enabled: true
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+featureGates: "AdditionalCertificateOutputFormats=true"
+config:
+  apiVersion: controller.config.cert-manager.io/v1alpha1
+  kind: ControllerConfiguration
+  logging:
+    verbosity: 2
+    format: json
+#  enableGatewayAPI will be controlled by whether we're deploying to Kind using a Pulumi config flag.
+crds:
+  enabled: true
+  keep: false
+prometheus:
+  enabled: true
+cainjector:
+  replicaCount: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  podDisruptionBudget:
+    enabled: true
+webhook:
+  replicaCount: 3
+  extraArgs:
+    - "--feature-gates=AdditionalCertificateOutputFormats=true"
