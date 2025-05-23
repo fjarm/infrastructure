@@ -2,7 +2,10 @@ module redis
 
 go 1.24.2
 
-require github.com/pulumi/pulumi/sdk/v3 v3.171.0
+require (
+	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.23.0
+	github.com/pulumi/pulumi/sdk/v3 v3.171.0
+)
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
