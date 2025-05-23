@@ -1,0 +1,7 @@
+name: redis
+description: A minimal Go Pulumi program that deploys the Redis Helm chart
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: go
