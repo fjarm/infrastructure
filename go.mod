@@ -2,7 +2,10 @@ module github.com/fjarm/infrastructure
 
 go 1.24.2
 
-require github.com/pulumi/pulumi/sdk/v3 v3.171.0
+require (
+	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.23.0
+	github.com/pulumi/pulumi/sdk/v3 v3.171.0
+)
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
@@ -64,6 +67,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
+	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/texttheater/golang-levenshtein v1.0.1 // indirect

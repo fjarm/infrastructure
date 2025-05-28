@@ -1,4 +1,4 @@
-package release
+package certmanager
 
 import (
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
