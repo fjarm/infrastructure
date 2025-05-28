@@ -18,6 +18,7 @@ config:
     verbosity: 2
     format: json
 #  enableGatewayAPI will be controlled by whether we're deploying to Kind using a Pulumi config flag.
+  enableGatewayAPI: true
 crds:
   enabled: true
   keep: false
