@@ -1,0 +1,7 @@
+name: fjarm
+description: A minimal Go Pulumi program to deploy Fjarm k8s infrastructure
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: go
