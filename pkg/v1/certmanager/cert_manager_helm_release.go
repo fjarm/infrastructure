@@ -12,7 +12,7 @@ const (
 	chartNamespace               = "cert-manager"
 	chartRepo                    = "https://charts.jetstack.io"
 	chartVersion                 = "1.17.2"
-	configKind                   = "cert-manager:kind"
+	configKind                   = "certmanager:kind"
 	exportCertManagerNamespace   = "certManagerNamespace"
 	exportCertManagerStatus      = "certManagerStatus"
 	helmReleaseName              = "cert-manager"
