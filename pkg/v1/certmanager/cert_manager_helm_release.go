@@ -19,7 +19,7 @@ const (
 	k8sProviderLogicalNamePrefix = "kubernetes"
 	valuesConfig                 = "config"
 	valuesEnableGatewayAPI       = "enableGatewayAPI"
-	valuesFilePath               = "v1/deploy/release/cert-manager-values.yaml"
+	valuesFilePath               = "deploy/v1/certmanager/cert-manager-values.yaml"
 )
 
 func DeployCertManager(ctx *pulumi.Context) error {
