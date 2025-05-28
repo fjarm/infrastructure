@@ -1,0 +1,2 @@
+config:
+  certmanager:kind: "true"
