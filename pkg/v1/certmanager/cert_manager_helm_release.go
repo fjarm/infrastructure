@@ -1,6 +1,7 @@
 package certmanager
 
 import (
+	"fmt"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -17,9 +18,6 @@ const (
 	exportCertManagerStatus      = "certManagerStatus"
 	helmReleaseName              = "cert-manager"
 	k8sProviderLogicalNamePrefix = "kubernetes"
-	valuesConfig                 = "config"
-	valuesEnableGatewayAPI       = "enableGatewayAPI"
-	valuesFilePath               = "deploy/v1/certmanager/cert-manager-values.yaml"
 )
 
 func DeployCertManager(ctx *pulumi.Context) error {
@@ -28,7 +26,7 @@ func DeployCertManager(ctx *pulumi.Context) error {
 	if err != nil {
 		return err
 	}
-	releaseArgs := NewCertManagerHelmReleaseArgs(kind, valuesFilePath)
+	releaseArgs := NewCertManagerHelmReleaseArgs(kind)
 	certManager, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(k8sProvider))
 	if err != nil {
 		return err
@@ -39,7 +37,7 @@ func DeployCertManager(ctx *pulumi.Context) error {
 	return nil
 }
 
-func NewCertManagerHelmReleaseArgs(kind bool, valuesFilePath string) *helmv3.ReleaseArgs {
+func NewCertManagerHelmReleaseArgs(kind bool) *helmv3.ReleaseArgs {
 	releaseArgs := &helmv3.ReleaseArgs{
 		Chart: pulumi.String(chartName),
 		RepositoryOpts: &helmv3.RepositoryOptsArgs{
@@ -51,12 +49,67 @@ func NewCertManagerHelmReleaseArgs(kind bool, valuesFilePath string) *helmv3.Rel
 		CreateNamespace: pulumi.Bool(true),
 		DisableCRDHooks: pulumi.Bool(false),
 		Timeout:         pulumi.Int(120),
-		ValueYamlFiles: pulumi.AssetOrArchiveArray{
-			pulumi.NewFileAsset(valuesFilePath),
-		},
 		Values: pulumi.Map{
-			valuesConfig: pulumi.Map{
-				valuesEnableGatewayAPI: pulumi.Bool(!kind),
+			"global": pulumi.Map{
+				"leaderElection": pulumi.Map{
+					"namespace": pulumi.String(chartNamespace),
+				},
+			},
+			"image": pulumi.Map{
+				"tag": pulumi.String(fmt.Sprintf("v%s", chartVersion)),
+			},
+			"replicaCount": pulumi.Int(3),
+			"podDisruptionBudget": pulumi.Map{
+				"enabled": pulumi.Bool(true),
+			},
+			"strategy": pulumi.Map{
+				"type": pulumi.String("RollingUpdate"),
+				"rollingUpdate": pulumi.Map{
+					"maxSurge":       pulumi.Int(1),
+					"maxUnavailable": pulumi.Int(1),
+				},
+			},
+			"config": pulumi.Map{
+				"apiVersion": pulumi.String("controller.config.cert-manager.io/v1alpha1"),
+				"kind":       pulumi.String("ControllerConfiguration"),
+				"logging": pulumi.Map{
+					"format":    pulumi.String("json"),
+					"verbosity": pulumi.Int(2),
+				},
+				"enableGatewayAPI": pulumi.Bool(!kind),
+			},
+			"crds": pulumi.Map{
+				"enabled": pulumi.Bool(true),
+				"keep":    pulumi.Bool(false),
+			},
+			"prometheus": pulumi.Map{
+				"enabled": pulumi.Bool(true),
+			},
+			"cainjector": pulumi.Map{
+				"replicaCount": pulumi.Int(3),
+				"strategy": pulumi.Map{
+					"type": pulumi.String("RollingUpdate"),
+					"rollingUpdate": pulumi.Map{
+						"maxSurge":       pulumi.Int(1),
+						"maxUnavailable": pulumi.Int(1),
+					},
+				},
+				"podDisruptionBudget": pulumi.Map{
+					"enabled": pulumi.Bool(true),
+				},
+			},
+			"webhook": pulumi.Map{
+				"replicaCount": pulumi.Int(3),
+				"strategy": pulumi.Map{
+					"type": pulumi.String("RollingUpdate"),
+					"rollingUpdate": pulumi.Map{
+						"maxSurge":       pulumi.Int(1),
+						"maxUnavailable": pulumi.Int(1),
+					},
+				},
+				"podDisruptionBudget": pulumi.Map{
+					"enabled": pulumi.Bool(true),
+				},
 			},
 		},
 	}
