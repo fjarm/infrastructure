@@ -20,6 +20,7 @@ const (
 	k8sProviderLogicalNamePrefix = "kubernetes"
 )
 
+// DeployCertManager deploys the cert-manager Helm chart.
 func DeployCertManager(ctx *pulumi.Context) error {
 	kind := config.GetBool(ctx, configKind)
 	k8sProvider, err := kubernetes.NewProvider(ctx, k8sProviderLogicalNamePrefix, nil)
@@ -37,6 +38,10 @@ func DeployCertManager(ctx *pulumi.Context) error {
 	return nil
 }
 
+// NewCertManagerHelmReleaseArgs creates a Helm release with values that match 1 for 1 the cert-manager-values.yaml
+// file. The Helm release can then be used by a Pulumi program to deploy cert-manager.
+//
+// [kind] controls the [enableGatewayAPI] value by disable the GatewayAPI if the chart is deployed locally.
 func NewCertManagerHelmReleaseArgs(kind bool) *helmv3.ReleaseArgs {
 	releaseArgs := &helmv3.ReleaseArgs{
 		Chart: pulumi.String(chartName),
