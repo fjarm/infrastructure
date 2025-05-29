@@ -1,9 +1,11 @@
 package redis
 
 import (
+	"fmt"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	"strings"
 )
 
 const (
@@ -37,18 +39,24 @@ func DeployRedis(ctx *pulumi.Context) error {
 
 // NewRedisHelmReleaseArgs constructs the Helm chart values needed to deploy Redis to k8s.
 func NewRedisHelmReleaseArgs() *helmv3.ReleaseArgs {
+	// Remove the trailing slash from the Helm repo URL if it contains one
+	trimmedRepo := strings.TrimSuffix(chartRepo, "/")
+	chart := fmt.Sprintf("%s/%s", trimmedRepo, chartName)
+
 	releaseArgs := &helmv3.ReleaseArgs{
-		Chart: pulumi.String(chartName),
-		RepositoryOpts: &helmv3.RepositoryOptsArgs{
-			Repo: pulumi.String(chartRepo),
-		},
+		Chart:           pulumi.String(chart),
 		Namespace:       pulumi.String(chartNamespace),
 		Version:         pulumi.String(chartVersion),
 		Atomic:          pulumi.Bool(true),
 		CreateNamespace: pulumi.Bool(true),
 		DisableCRDHooks: pulumi.Bool(false),
 		Timeout:         pulumi.Int(120),
-		Values:          pulumi.Map{},
+		Values: pulumi.Map{
+			// SEE: https://github.com/bitnami/charts/issues/14327#issuecomment-1732543394
+			"volumePermissions": pulumi.Map{
+				"enabled": pulumi.Bool(true),
+			},
+		},
 	}
 	return releaseArgs
 }
