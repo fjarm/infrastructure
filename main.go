@@ -8,6 +8,10 @@ import (
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		err := certmanager.DeployCertManager(ctx)
+		//err := VerifyCertManagerDeployed()
+		//if err != nil {
+		//	return err
+		//}
 		return err
 	})
 }

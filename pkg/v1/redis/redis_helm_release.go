@@ -1,4 +1,4 @@
-package release
+package redis
 
 import (
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
@@ -15,7 +15,6 @@ const (
 	exportRedisStatus            = "redisStatus"
 	helmReleaseName              = "redis"
 	k8sProviderLogicalNamePrefix = "kubernetes"
-	valuesFilePath               = "v1/deploy/release/redis-values.yaml"
 )
 
 // DeployRedis attempts to deploy Redis using the Bitnami Helm chart.
@@ -24,11 +23,6 @@ func DeployRedis(ctx *pulumi.Context) error {
 	if err != nil {
 		return err
 	}
-
-	//err := VerifyCertManagerDeployed()
-	//if err != nil {
-	//	return err
-	//}
 
 	releaseArgs := NewRedisHelmReleaseArgs()
 	redisRelease, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(k8sProvider))
@@ -54,14 +48,12 @@ func NewRedisHelmReleaseArgs() *helmv3.ReleaseArgs {
 		CreateNamespace: pulumi.Bool(true),
 		DisableCRDHooks: pulumi.Bool(false),
 		Timeout:         pulumi.Int(120),
-		ValueYamlFiles: pulumi.AssetOrArchiveArray{
-			pulumi.NewFileAsset(valuesFilePath),
-		},
+		Values:          pulumi.Map{},
 	}
 	return releaseArgs
 }
 
-// VerifyCertManagerDeployed references the cert-manager Pulumi Stack to verify that the cert-manager Helm chart has
+// VerifyCertManagerDeployed references the certmanager Pulumi Stack to verify that the certmanager Helm chart has
 // been deployed. Without this chart, we cannot request TLS certificates.
 func VerifyCertManagerDeployed() error {
 	return ErrUnimplemented
