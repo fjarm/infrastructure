@@ -1,6 +1,0 @@
-#tls:
-#  enabled: true
-#  existingSecret: "redis-certificate"
-#  certFileName: "tls.crt"
-#  certKeyFileName: "tls.key"
-#  certCAFileName: "ca.crt"
