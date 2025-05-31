@@ -75,7 +75,7 @@ func NewDragonflyHelmReleaseArgs() *helmv3.ReleaseArgs {
 				"createCerts": pulumi.Bool(true),
 				"issuer": pulumi.Map{
 					"kind": pulumi.String("ClusterIssuer"),
-					"name": pulumi.String("default"),
+					"name": pulumi.String("internal-cluster-issuer"),
 				},
 			},
 			"replicaCount": pulumi.Int(1),
