@@ -33,11 +33,9 @@ func DeployCertManager(ctx *pulumi.Context) error {
 		return err
 	}
 
-	if kind {
-		err = DeployCertManagerInternalClusterIssuer(ctx, k8sProvider, kind)
-		if err != nil {
-			return err
-		}
+	err = DeployCertManagerInternalClusterIssuer(ctx, k8sProvider, kind)
+	if err != nil {
+		return err
 	}
 
 	ctx.Export(exportCertManagerNamespace, certManager.Namespace)
