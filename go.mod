@@ -5,6 +5,7 @@ go 1.24.2
 require (
 	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.23.0
 	github.com/pulumi/pulumi-tls-self-signed-cert/sdk v0.1.3
+	github.com/pulumi/pulumi-tls/sdk/v4 v4.6.1
 	github.com/pulumi/pulumi/sdk/v3 v3.171.0
 )
 
@@ -62,7 +63,6 @@ require (
 	github.com/pkg/term v1.1.0 // indirect
 	github.com/pulumi/appdash v0.0.0-20231130102222-75f619a67231 // indirect
 	github.com/pulumi/esc v0.14.2 // indirect
-	github.com/pulumi/pulumi-tls/sdk/v4 v4.6.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // indirect
