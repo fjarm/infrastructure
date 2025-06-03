@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	exportedSelfSignedCACert  = "selfSignedCACert"
 	exportedSelfSignedCertKey = "selfSignedCertKey"
 	exportedSelfSignedCertPem = "selfSignedCertPem"
 	privateKeyName            = "privateKey"
@@ -64,7 +63,6 @@ func DeploySecretFromCACertificate(
 		return nil, err
 	}
 
-	caCert := stack.GetStringOutput(pulumi.String(exportedSelfSignedCACert))
 	certKey := stack.GetStringOutput(pulumi.String(exportedSelfSignedCertKey))
 	certPem := stack.GetStringOutput(pulumi.String(exportedSelfSignedCertPem))
 
@@ -77,7 +75,6 @@ func DeploySecretFromCACertificate(
 		},
 		Type: pulumi.String("kubernetes.io/tls"),
 		Data: pulumi.StringMap{
-			"ca.crt":  caCert,
 			"tls.key": certKey,
 			"tls.crt": certPem,
 		},
@@ -106,7 +103,7 @@ func NewCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs
 			Namespace: pulumi.String(chartNamespace),
 		},
 		OtherFields: map[string]any{
-			"specs": map[string]any{
+			"spec": map[string]any{
 				"ca": map[string]any{
 					"secretName": "cert-manager-ca-cert",
 				},
@@ -150,7 +147,6 @@ func newRootCACertificate(ctx *pulumi.Context, kind bool) (*tls.SelfSignedCert, 
 			return nil, err
 		}
 
-		//ctx.Export(exportedSelfSignedCACert, cert.CaCert)
 		ctx.Export(exportedSelfSignedCertKey, cert.PrivateKeyPem)
 		ctx.Export(exportedSelfSignedCertPem, cert.CertPem)
 
