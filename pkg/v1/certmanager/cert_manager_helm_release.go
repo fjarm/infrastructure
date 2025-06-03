@@ -84,7 +84,10 @@ func NewCertManagerHelmReleaseArgs(kind bool) *helmv3.ReleaseArgs {
 				"kind":       pulumi.String("ControllerConfiguration"),
 				"logging": pulumi.Map{
 					"format":    pulumi.String("json"),
-					"verbosity": pulumi.Int(2),
+					"verbosity": pulumi.Int(5), // Debug
+				},
+				"leaderElectionConfig": pulumi.Map{
+					"namespace": pulumi.String(chartNamespace),
 				},
 				"enableGatewayAPI": pulumi.Bool(!kind),
 			},
@@ -97,10 +100,21 @@ func NewCertManagerHelmReleaseArgs(kind bool) *helmv3.ReleaseArgs {
 			},
 			"cainjector": pulumi.Map{
 				"replicaCount": pulumi.Int(3),
+				"config": pulumi.Map{
+					"apiVersion": pulumi.String("cainjector.config.cert-manager.io/v1alpha1"),
+					"kind":       pulumi.String("CAInjectorConfiguration"),
+					"logging": pulumi.Map{
+						"format":    pulumi.String("json"),
+						"verbosity": pulumi.Int(5), // Debug
+					},
+					"leaderElectionConfig": pulumi.Map{
+						"namespace": pulumi.String(chartNamespace),
+					},
+				},
 				"strategy": pulumi.Map{
 					"type": pulumi.String("RollingUpdate"),
 					"rollingUpdate": pulumi.Map{
-						"maxSurge":       pulumi.Int(1),
+						"maxSurge":       pulumi.Int(0),
 						"maxUnavailable": pulumi.Int(1),
 					},
 				},
@@ -113,7 +127,7 @@ func NewCertManagerHelmReleaseArgs(kind bool) *helmv3.ReleaseArgs {
 				"strategy": pulumi.Map{
 					"type": pulumi.String("RollingUpdate"),
 					"rollingUpdate": pulumi.Map{
-						"maxSurge":       pulumi.Int(1),
+						"maxSurge":       pulumi.Int(0),
 						"maxUnavailable": pulumi.Int(1),
 					},
 				},
