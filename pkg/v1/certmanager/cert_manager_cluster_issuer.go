@@ -20,7 +20,12 @@ const (
 
 // DeployCertManagerInternalClusterIssuer deploys an internal ClusterIssuer resource. If the Kubernetes cluster is
 // local - i.e. Kind or Minikube - then it simply uses a self-signed certificate generated from Pulumi's provider.
-func DeployCertManagerInternalClusterIssuer(ctx *pulumi.Context, k8sProvider *kubernetes.Provider, deps []pulumi.Resource, kind bool) error {
+func DeployCertManagerInternalClusterIssuer(
+	ctx *pulumi.Context,
+	k8sProvider *kubernetes.Provider,
+	deps []pulumi.Resource,
+	kind bool,
+) error {
 	if !kind {
 		return common.ErrUnimplemented
 	}
@@ -97,7 +102,8 @@ func NewCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs
 		ApiVersion: pulumi.String("cert-manager.io/v1"),
 		Kind:       pulumi.String("ClusterIssuer"),
 		Metadata: k8sV2.ObjectMetaArgs{
-			Name: pulumi.String("internal-cluster-issuer"),
+			Name:      pulumi.String("internal-cluster-issuer"),
+			Namespace: pulumi.String(chartNamespace),
 		},
 		OtherFields: map[string]any{
 			"specs": map[string]any{
