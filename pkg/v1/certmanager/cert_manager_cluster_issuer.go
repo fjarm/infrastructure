@@ -29,12 +29,12 @@ func DeployCertManagerInternalClusterIssuer(
 		return common.ErrUnimplemented
 	}
 
-	cert, err := newPulumiRootCACertificate(ctx, kind)
+	key, cert, err := newPulumiRootCACertificate(ctx, kind)
 	if err != nil {
 		return err
 	}
 
-	secret, err := DeploySecretFromCACertificate(ctx, k8sProvider, []pulumi.Resource{cert})
+	secret, err := DeploySecretFromCACertificate(ctx, k8sProvider, key, cert, deps)
 	if err != nil {
 		return err
 	}
@@ -56,16 +56,10 @@ func DeployCertManagerInternalClusterIssuer(
 func DeploySecretFromCACertificate(
 	ctx *pulumi.Context,
 	k8sProvider *kubernetes.Provider,
+	key *tls.PrivateKey,
+	cert *tls.SelfSignedCert,
 	deps []pulumi.Resource,
 ) (*k8sV1.Secret, error) {
-	stack, err := pulumi.NewStackReference(ctx, "veganafro/infrastructure/dev", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	certKey := stack.GetStringOutput(pulumi.String(exportedSelfSignedCertKey))
-	certPem := stack.GetStringOutput(pulumi.String(exportedSelfSignedCertPem))
-
 	secretArgs := k8sV1.SecretArgs{
 		ApiVersion: pulumi.String("v1"),
 		Kind:       pulumi.String("Secret"),
@@ -74,9 +68,9 @@ func DeploySecretFromCACertificate(
 			Namespace: pulumi.String(chartNamespace),
 		},
 		Type: pulumi.String("kubernetes.io/tls"),
-		Data: pulumi.StringMap{
-			"tls.key": certKey,
-			"tls.crt": certPem,
+		StringData: pulumi.StringMap{
+			"tls.key": key.PrivateKeyPem,
+			"tls.crt": cert.CertPem,
 		},
 	}
 	secret, err := k8sV1.NewSecret(
@@ -116,13 +110,13 @@ func NewCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs
 // newPulumiRootCACertificate will use Pulumi do create a new root CA certificate to be used to stand up a secret used by a CA
 // ClusterIssuer. If deploying locally to Kind or Minikube, it'll be a self-signed certificate. Otherwise, it'll be a
 // certificate from the Infisical PKI.
-func newPulumiRootCACertificate(ctx *pulumi.Context, kind bool) (*tls.SelfSignedCert, error) {
+func newPulumiRootCACertificate(ctx *pulumi.Context, kind bool) (*tls.PrivateKey, *tls.SelfSignedCert, error) {
 	if kind {
 		key, err := tls.NewPrivateKey(ctx, privateKeyName, &tls.PrivateKeyArgs{
 			Algorithm: pulumi.String("RSA"),
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		cert, err := tls.NewSelfSignedCert(ctx, selfSignedCertName, &tls.SelfSignedCertArgs{
 			PrivateKeyPem: key.PrivateKeyPem,
@@ -132,25 +126,20 @@ func newPulumiRootCACertificate(ctx *pulumi.Context, kind bool) (*tls.SelfSigned
 				pulumi.String("digital_signature"),
 				pulumi.String("server_auth"),
 			},
-			DnsNames: pulumi.StringArray{
-				pulumi.String("fjarm.xyz"),
-			},
-			IsCaCertificate:   pulumi.Bool(true),
-			SetAuthorityKeyId: pulumi.Bool(true),
-			SetSubjectKeyId:   pulumi.Bool(true),
+			IsCaCertificate: pulumi.Bool(true),
 			Subject: &tls.SelfSignedCertSubjectArgs{
 				Organization: pulumi.String("Fjarm"),
 			},
 			ValidityPeriodHours: pulumi.Int(807660),
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		ctx.Export(exportedSelfSignedCertKey, cert.PrivateKeyPem)
+		ctx.Export(exportedSelfSignedCertKey, key.PrivateKeyPem)
 		ctx.Export(exportedSelfSignedCertPem, cert.CertPem)
 
-		return cert, nil
+		return key, cert, nil
 	}
-	return nil, common.ErrUnimplemented
+	return nil, nil, common.ErrUnimplemented
 }
