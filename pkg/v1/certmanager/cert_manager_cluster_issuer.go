@@ -29,7 +29,7 @@ func DeployCertManagerInternalClusterIssuer(
 		return common.ErrUnimplemented
 	}
 
-	cert, err := newRootCACertificate(ctx, kind)
+	cert, err := newPulumiRootCACertificate(ctx, kind)
 	if err != nil {
 		return err
 	}
@@ -113,10 +113,10 @@ func NewCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs
 	return &cra
 }
 
-// newRootCACertificate will use Pulumi do create a new root CA certificate to be used to stand up a secret used by a CA
+// newPulumiRootCACertificate will use Pulumi do create a new root CA certificate to be used to stand up a secret used by a CA
 // ClusterIssuer. If deploying locally to Kind or Minikube, it'll be a self-signed certificate. Otherwise, it'll be a
 // certificate from the Infisical PKI.
-func newRootCACertificate(ctx *pulumi.Context, kind bool) (*tls.SelfSignedCert, error) {
+func newPulumiRootCACertificate(ctx *pulumi.Context, kind bool) (*tls.SelfSignedCert, error) {
 	if kind {
 		key, err := tls.NewPrivateKey(ctx, privateKeyName, &tls.PrivateKeyArgs{
 			Algorithm: pulumi.String("RSA"),
