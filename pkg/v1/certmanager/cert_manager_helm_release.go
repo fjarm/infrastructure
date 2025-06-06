@@ -21,26 +21,26 @@ const (
 )
 
 // DeployCertManager deploys the cert-manager Helm chart.
-func DeployCertManager(ctx *pulumi.Context) error {
+func DeployCertManager(ctx *pulumi.Context) ([]pulumi.Resource, error) {
 	kind := config.GetBool(ctx, configKind)
 	k8sProvider, err := kubernetes.NewProvider(ctx, k8sProviderLogicalNamePrefix, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	releaseArgs := NewCertManagerHelmReleaseArgs(kind)
 	certManager, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(k8sProvider))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = DeployCertManagerInternalClusterIssuer(ctx, k8sProvider, []pulumi.Resource{certManager}, kind)
+	clusterIssuer, err := DeployCertManagerInternalClusterIssuer(ctx, k8sProvider, []pulumi.Resource{certManager}, kind)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ctx.Export(exportCertManagerNamespace, certManager.Namespace)
 	ctx.Export(exportCertManagerStatus, certManager.Status)
-	return nil
+	return []pulumi.Resource{certManager, clusterIssuer}, nil
 }
 
 // NewCertManagerHelmReleaseArgs creates a Helm release with values that match 1 for 1 the cert-manager-values.yaml

@@ -14,7 +14,7 @@ const (
 	certManagerCACertName     = "cert-manager-ca-cert"
 	exportedSelfSignedCertKey = "selfSignedCertKey"
 	exportedSelfSignedCertPem = "selfSignedCertPem"
-	internalClusterIssuerName = "internal-cluster-issuer"
+	InternalClusterIssuerName = "internal-cluster-issuer"
 	privateKeyName            = "privateKey"
 	selfSignedCertName        = "selfSignedCert"
 )
@@ -26,32 +26,32 @@ func DeployCertManagerInternalClusterIssuer(
 	k8sProvider *kubernetes.Provider,
 	deps []pulumi.Resource,
 	kind bool,
-) error {
+) (*apiextensions.CustomResource, error) {
 	if !kind {
-		return common.ErrUnimplemented
+		return nil, common.ErrUnimplemented
 	}
 
 	key, cert, err := newPulumiRootCACertificate(ctx, kind)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	secret, err := DeploySecretFromCACertificate(ctx, k8sProvider, key, cert, deps)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cra := NewCertManagerInternalClusterIssuerArgs()
-	_, err = apiextensions.NewCustomResource(
+	clusterIssuer, err := apiextensions.NewCustomResource(
 		ctx,
-		internalClusterIssuerName,
+		InternalClusterIssuerName,
 		cra,
 		pulumi.DependsOn(append(deps, secret)),
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return clusterIssuer, nil
 }
 
 // DeploySecretFromCACertificate deploys a Secret to the k8s cluster that can be used to bootstrap a ClusterIssuer.
@@ -95,7 +95,7 @@ func NewCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs
 		ApiVersion: pulumi.String("cert-manager.io/v1"),
 		Kind:       pulumi.String("ClusterIssuer"),
 		Metadata: k8sV2.ObjectMetaArgs{
-			Name:      pulumi.String(internalClusterIssuerName),
+			Name:      pulumi.String(InternalClusterIssuerName),
 			Namespace: pulumi.String(chartNamespace),
 		},
 		OtherFields: map[string]any{

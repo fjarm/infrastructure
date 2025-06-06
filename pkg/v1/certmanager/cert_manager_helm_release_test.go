@@ -48,7 +48,7 @@ func (m mocks) NewResource(args pulumi.MockResourceArgs) (string, resource.Prope
 
 func TestCertManagerHelmRelease(t *testing.T) {
 	err := pulumi.RunErr(func(ctx *pulumi.Context) error {
-		err := DeployCertManager(ctx)
+		_, err := DeployCertManager(ctx)
 		return err
 	}, pulumi.WithMocks("project", "stack", mocks{}))
 
