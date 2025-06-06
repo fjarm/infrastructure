@@ -2,6 +2,7 @@ package dragonfly
 
 import (
 	"fmt"
+	"github.com/fjarm/infrastructure/pkg/v1/certmanager"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -9,24 +10,24 @@ import (
 )
 
 const (
-	chartRepo                    = "oci://ghcr.io/dragonflydb/dragonfly/helm/dragonfly"
-	chartNamespace               = "dragonfly"
-	chartVersion                 = "v1.30.3"
-	exportDragonflyNamespace     = "dragonflyNamespace"
-	exportDragonflyStatus        = "dragonflyStatus"
-	helmReleaseName              = "dragonfly"
-	k8sProviderLogicalNamePrefix = "kubernetes"
+	chartRepo                = "oci://ghcr.io/dragonflydb/dragonfly/helm/dragonfly"
+	chartNamespace           = "dragonfly"
+	chartVersion             = "v1.30.3"
+	exportDragonflyNamespace = "dragonflyNamespace"
+	exportDragonflyStatus    = "dragonflyStatus"
+	helmReleaseName          = "dragonfly"
 )
 
 // DeployDragonfly attempts to deploy DragonflyDB using the official Helm chart.
-func DeployDragonfly(ctx *pulumi.Context) error {
-	k8sProvider, err := kubernetes.NewProvider(ctx, k8sProviderLogicalNamePrefix, nil)
-	if err != nil {
-		return err
-	}
-
+func DeployDragonfly(ctx *pulumi.Context, provider *kubernetes.Provider, deps []pulumi.Resource) error {
 	releaseArgs := NewDragonflyHelmReleaseArgs()
-	dragonflyRelease, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(k8sProvider))
+	dragonflyRelease, err := helmv3.NewRelease(
+		ctx,
+		helmReleaseName,
+		releaseArgs,
+		pulumi.Provider(provider),
+		pulumi.DependsOn(deps),
+	)
 	if err != nil {
 		return err
 	}
@@ -75,7 +76,7 @@ func NewDragonflyHelmReleaseArgs() *helmv3.ReleaseArgs {
 				"createCerts": pulumi.Bool(true),
 				"issuer": pulumi.Map{
 					"kind": pulumi.String("ClusterIssuer"),
-					"name": pulumi.String("internal-cluster-issuer"),
+					"name": pulumi.String(certmanager.InternalClusterIssuerName),
 				},
 			},
 			"replicaCount": pulumi.Int(1),

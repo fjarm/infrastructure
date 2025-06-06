@@ -9,31 +9,27 @@ import (
 )
 
 const (
-	chartName                    = "cert-manager"
-	chartNamespace               = "cert-manager"
-	chartRepo                    = "https://charts.jetstack.io"
-	chartVersion                 = "1.17.2"
-	configKind                   = "certmanager:kind"
-	exportCertManagerNamespace   = "certManagerNamespace"
-	exportCertManagerStatus      = "certManagerStatus"
-	helmReleaseName              = "cert-manager"
-	k8sProviderLogicalNamePrefix = "kubernetes"
+	chartName                  = "cert-manager"
+	chartNamespace             = "cert-manager"
+	chartRepo                  = "https://charts.jetstack.io"
+	chartVersion               = "1.17.2"
+	configKind                 = "certmanager:kind"
+	exportCertManagerNamespace = "certManagerNamespace"
+	exportCertManagerStatus    = "certManagerStatus"
+	helmReleaseName            = "cert-manager"
 )
 
 // DeployCertManager deploys the cert-manager Helm chart.
-func DeployCertManager(ctx *pulumi.Context) ([]pulumi.Resource, error) {
+func DeployCertManager(ctx *pulumi.Context, provider *kubernetes.Provider) ([]pulumi.Resource, error) {
 	kind := config.GetBool(ctx, configKind)
-	k8sProvider, err := kubernetes.NewProvider(ctx, k8sProviderLogicalNamePrefix, nil)
-	if err != nil {
-		return nil, err
-	}
+
 	releaseArgs := NewCertManagerHelmReleaseArgs(kind)
-	certManager, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(k8sProvider))
+	certManager, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(provider))
 	if err != nil {
 		return nil, err
 	}
 
-	clusterIssuer, err := DeployCertManagerInternalClusterIssuer(ctx, k8sProvider, []pulumi.Resource{certManager}, kind)
+	clusterIssuer, err := DeployCertManagerInternalClusterIssuer(ctx, provider, []pulumi.Resource{certManager}, kind)
 	if err != nil {
 		return nil, err
 	}
