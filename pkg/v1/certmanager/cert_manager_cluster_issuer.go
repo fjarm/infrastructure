@@ -36,7 +36,7 @@ func DeployCertManagerInternalClusterIssuer(
 		return nil, err
 	}
 
-	secret, err := DeploySecretFromCACertificate(ctx, k8sProvider, key, cert, deps)
+	secret, err := DeploySecretFromCACertificate(ctx, k8sProvider, key, cert, []pulumi.Resource{key, cert})
 	if err != nil {
 		return nil, err
 	}
