@@ -57,6 +57,8 @@ func NewDragonflyHelmReleaseArgs() *helmv3.ReleaseArgs {
 				pulumi.String("--admin_port=8000"),
 				pulumi.String(fmt.Sprintf("--dbfilename=my-dump-%s}", time.Now().Format(time.RFC3339))),
 				pulumi.String("--snapshot_cron=* * * * *"), // Snapshot every minute
+				// TODO(2025-06-06): Update this to be more secure
+				pulumi.String("--requirepass=password"),
 			},
 			"podSecurityContext": pulumi.Map{
 				"fsGroup": pulumi.Int(2000),
