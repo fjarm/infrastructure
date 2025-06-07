@@ -4,8 +4,8 @@ import (
 	"github.com/fjarm/infrastructure/pkg/v1/common"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apiextensions"
-	k8sV1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
-	k8sV2 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
+	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
+	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi-tls/sdk/v4/go/tls"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -61,11 +61,11 @@ func DeploySecretFromCACertificate(
 	key *tls.PrivateKey,
 	cert *tls.SelfSignedCert,
 	deps []pulumi.Resource,
-) (*k8sV1.Secret, error) {
-	secretArgs := k8sV1.SecretArgs{
+) (*corev1.Secret, error) {
+	secretArgs := corev1.SecretArgs{
 		ApiVersion: pulumi.String("v1"),
 		Kind:       pulumi.String("Secret"),
-		Metadata: &k8sV2.ObjectMetaArgs{
+		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(certManagerCACertName),
 			Namespace: pulumi.String(chartNamespace),
 		},
@@ -75,7 +75,7 @@ func DeploySecretFromCACertificate(
 			"tls.crt": cert.CertPem,
 		},
 	}
-	secret, err := k8sV1.NewSecret(
+	secret, err := corev1.NewSecret(
 		ctx,
 		certManagerCACertName,
 		&secretArgs,
@@ -94,7 +94,7 @@ func NewCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs
 	cra := apiextensions.CustomResourceArgs{
 		ApiVersion: pulumi.String("cert-manager.io/v1"),
 		Kind:       pulumi.String("ClusterIssuer"),
-		Metadata: k8sV2.ObjectMetaArgs{
+		Metadata: metav1.ObjectMetaArgs{
 			Name:      pulumi.String(InternalClusterIssuerName),
 			Namespace: pulumi.String(chartNamespace),
 		},
