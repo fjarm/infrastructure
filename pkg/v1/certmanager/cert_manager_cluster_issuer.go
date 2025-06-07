@@ -19,9 +19,9 @@ const (
 	selfSignedCertName        = "selfSignedCert"
 )
 
-// DeployCertManagerInternalClusterIssuer deploys an internal ClusterIssuer resource. If the Kubernetes cluster is
+// deployCertManagerInternalClusterIssuer deploys an internal ClusterIssuer resource. If the Kubernetes cluster is
 // local - i.e. Kind or Minikube - then it simply uses a self-signed certificate generated from Pulumi's provider.
-func DeployCertManagerInternalClusterIssuer(
+func deployCertManagerInternalClusterIssuer(
 	ctx *pulumi.Context,
 	k8sProvider *kubernetes.Provider,
 	deps []pulumi.Resource,
@@ -36,12 +36,12 @@ func DeployCertManagerInternalClusterIssuer(
 		return nil, err
 	}
 
-	secret, err := DeploySecretFromCACertificate(ctx, k8sProvider, key, cert, []pulumi.Resource{key, cert})
+	secret, err := deploySecretFromCACertificate(ctx, k8sProvider, key, cert, []pulumi.Resource{key, cert})
 	if err != nil {
 		return nil, err
 	}
 
-	cra := NewCertManagerInternalClusterIssuerArgs()
+	cra := newCertManagerInternalClusterIssuerArgs()
 	clusterIssuer, err := apiextensions.NewCustomResource(
 		ctx,
 		InternalClusterIssuerName,
@@ -54,8 +54,8 @@ func DeployCertManagerInternalClusterIssuer(
 	return clusterIssuer, nil
 }
 
-// DeploySecretFromCACertificate deploys a Secret to the k8s cluster that can be used to bootstrap a ClusterIssuer.
-func DeploySecretFromCACertificate(
+// deploySecretFromCACertificate deploys a Secret to the k8s cluster that can be used to bootstrap a ClusterIssuer.
+func deploySecretFromCACertificate(
 	ctx *pulumi.Context,
 	k8sProvider *kubernetes.Provider,
 	key *tls.PrivateKey,
@@ -88,9 +88,9 @@ func DeploySecretFromCACertificate(
 	return secret, nil
 }
 
-// NewCertManagerInternalClusterIssuerArgs returns a pointer to apiextensions.CustomResourceArgs that sets up a
+// newCertManagerInternalClusterIssuerArgs returns a pointer to apiextensions.CustomResourceArgs that sets up a
 // ClusterIssuer with a reference to self-signed certificates created by Pulumi.
-func NewCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs {
+func newCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs {
 	cra := apiextensions.CustomResourceArgs{
 		ApiVersion: pulumi.String("cert-manager.io/v1"),
 		Kind:       pulumi.String("ClusterIssuer"),
