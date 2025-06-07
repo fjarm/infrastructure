@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/fjarm/infrastructure/pkg/v1/certmanager"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
-	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
+	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
+	helmv4 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v4"
+	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"time"
 )
@@ -15,16 +17,21 @@ const (
 	chartVersion             = "v1.30.3"
 	exportDragonflyNamespace = "dragonflyNamespace"
 	exportDragonflyStatus    = "dragonflyStatus"
-	helmReleaseName          = "dragonfly"
+	helmChartName            = "dragonfly"
 )
 
 // DeployDragonfly attempts to deploy DragonflyDB using the official Helm chart.
 func DeployDragonfly(ctx *pulumi.Context, provider *kubernetes.Provider, deps []pulumi.Resource) error {
-	releaseArgs := NewDragonflyHelmReleaseArgs()
-	dragonflyRelease, err := helmv3.NewRelease(
+	ns, err := newDragonflyNamespace(ctx)
+	if err != nil {
+		return err
+	}
+
+	chartArgs := newDragonflyHelmChartArgs(ns)
+	dragonflyChart, err := helmv4.NewChart(
 		ctx,
-		helmReleaseName,
-		releaseArgs,
+		helmChartName,
+		chartArgs,
 		pulumi.Provider(provider),
 		pulumi.DependsOn(deps),
 	)
@@ -32,21 +39,17 @@ func DeployDragonfly(ctx *pulumi.Context, provider *kubernetes.Provider, deps []
 		return err
 	}
 
-	ctx.Export(exportDragonflyNamespace, dragonflyRelease.Namespace)
-	ctx.Export(exportDragonflyStatus, dragonflyRelease.Status)
+	ctx.Export(exportDragonflyNamespace, ns)
+	ctx.Export(exportDragonflyStatus, dragonflyChart)
 	return nil
 }
 
-// NewDragonflyHelmReleaseArgs constructs the Helm chart values needed to deploy DragonflyDB to k8s.
-func NewDragonflyHelmReleaseArgs() *helmv3.ReleaseArgs {
-	releaseArgs := &helmv3.ReleaseArgs{
-		Chart:           pulumi.String(chartRepo),
-		Namespace:       pulumi.String(chartNamespace),
-		Version:         pulumi.String(chartVersion),
-		Atomic:          pulumi.Bool(true),
-		CreateNamespace: pulumi.Bool(true),
-		DisableCRDHooks: pulumi.Bool(false),
-		Timeout:         pulumi.Int(120),
+// newDragonflyHelmChartArgs constructs the Helm chart values needed to deploy DragonflyDB to k8s.
+func newDragonflyHelmChartArgs(ns *corev1.Namespace) *helmv4.ChartArgs {
+	chartArgs := &helmv4.ChartArgs{
+		Chart:     pulumi.String(chartRepo),
+		Namespace: ns.Metadata.Name(),
+		Version:   pulumi.String(chartVersion),
 		Values: pulumi.Map{
 			"storage": pulumi.Map{
 				"enabled":  pulumi.Bool(true),
@@ -80,6 +83,8 @@ func NewDragonflyHelmReleaseArgs() *helmv3.ReleaseArgs {
 					"kind": pulumi.String("ClusterIssuer"),
 					"name": pulumi.String(certmanager.InternalClusterIssuerName),
 				},
+				"cert": pulumi.String("tls.crt"),
+				"key":  pulumi.String("tls.key"),
 			},
 			"replicaCount": pulumi.Int(1),
 			"resources": pulumi.Map{
@@ -89,5 +94,21 @@ func NewDragonflyHelmReleaseArgs() *helmv3.ReleaseArgs {
 			},
 		},
 	}
-	return releaseArgs
+	return chartArgs
+}
+
+// newDragonflyNamespace creates a Namespace for DragonflyDB to be installed in.
+func newDragonflyNamespace(ctx *pulumi.Context) (*corev1.Namespace, error) {
+	ns, err := corev1.NewNamespace(ctx, chartNamespace, &corev1.NamespaceArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name: pulumi.String(chartNamespace),
+			Labels: pulumi.StringMap{
+				"app": pulumi.String(helmChartName),
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ns, nil
 }
