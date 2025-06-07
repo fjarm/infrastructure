@@ -36,16 +36,16 @@ func DeployCertManager(ctx *pulumi.Context, provider *kubernetes.Provider) ([]pu
 		return nil, err
 	}
 
-	//clusterIssuer, err := DeployCertManagerInternalClusterIssuer(ctx, provider, []pulumi.Resource{certManager}, kind)
-	//if err != nil {
-	//	return nil, err
-	//}
+	clusterIssuer, err := DeployCertManagerInternalClusterIssuer(ctx, provider, []pulumi.Resource{certManager}, kind)
+	if err != nil {
+		return nil, err
+	}
 
 	ctx.Export(exportCertManagerNamespace, ns)
 	ctx.Export(exportCertManagerStatus, certManager)
 	return []pulumi.Resource{
 		certManager,
-		//clusterIssuer,
+		clusterIssuer,
 	}, nil
 }
 
