@@ -26,3 +26,7 @@ go.work.sum
 
 # GoLand files
 .idea
+
+*.yaml
+!Pulumi.dev.yaml
+!Pulumi.yaml
