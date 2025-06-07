@@ -3,7 +3,9 @@ package certmanager
 import (
 	"fmt"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
-	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
+	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
+	helmv4 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v4"
+	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
@@ -16,45 +18,49 @@ const (
 	configKind                 = "certmanager:kind"
 	exportCertManagerNamespace = "certManagerNamespace"
 	exportCertManagerStatus    = "certManagerStatus"
-	helmReleaseName            = "cert-manager"
+	helmChartName              = "cert-manager"
 )
 
 // DeployCertManager deploys the cert-manager Helm chart.
 func DeployCertManager(ctx *pulumi.Context, provider *kubernetes.Provider) ([]pulumi.Resource, error) {
 	kind := config.GetBool(ctx, configKind)
 
-	releaseArgs := NewCertManagerHelmReleaseArgs(kind)
-	certManager, err := helmv3.NewRelease(ctx, helmReleaseName, releaseArgs, pulumi.Provider(provider))
+	ns, err := newCertManagerNamespace(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	clusterIssuer, err := DeployCertManagerInternalClusterIssuer(ctx, provider, []pulumi.Resource{certManager}, kind)
+	chartArgs := newCertManagerHelmChartArgs(ns, kind)
+	certManager, err := helmv4.NewChart(ctx, helmChartName, chartArgs, pulumi.Provider(provider))
 	if err != nil {
 		return nil, err
 	}
 
-	ctx.Export(exportCertManagerNamespace, certManager.Namespace)
-	ctx.Export(exportCertManagerStatus, certManager.Status)
-	return []pulumi.Resource{certManager, clusterIssuer}, nil
+	//clusterIssuer, err := DeployCertManagerInternalClusterIssuer(ctx, provider, []pulumi.Resource{certManager}, kind)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	ctx.Export(exportCertManagerNamespace, ns)
+	ctx.Export(exportCertManagerStatus, certManager)
+	return []pulumi.Resource{
+		certManager,
+		//clusterIssuer,
+	}, nil
 }
 
-// NewCertManagerHelmReleaseArgs creates a Helm release with values that match 1 for 1 the cert-manager-values.yaml
-// file. The Helm release can then be used by a Pulumi program to deploy cert-manager.
+// newCertManagerHelmChartArgs creates a Helm chart arguments. The Helm chart args can then be used by a Pulumi program
+// to deploy cert-manager.
 //
 // [kind] controls the [enableGatewayAPI] value by disable the GatewayAPI if the chart is deployed locally.
-func NewCertManagerHelmReleaseArgs(kind bool) *helmv3.ReleaseArgs {
-	releaseArgs := &helmv3.ReleaseArgs{
+func newCertManagerHelmChartArgs(ns *corev1.Namespace, kind bool) *helmv4.ChartArgs {
+	chartArgs := &helmv4.ChartArgs{
 		Chart: pulumi.String(chartName),
-		RepositoryOpts: &helmv3.RepositoryOptsArgs{
+		RepositoryOpts: &helmv4.RepositoryOptsArgs{
 			Repo: pulumi.String(chartRepo),
 		},
-		Namespace:       pulumi.String(chartNamespace),
-		Version:         pulumi.String(chartVersion),
-		Atomic:          pulumi.Bool(true),
-		CreateNamespace: pulumi.Bool(true),
-		DisableCRDHooks: pulumi.Bool(false),
-		Timeout:         pulumi.Int(120),
+		Namespace: ns.Metadata.Name(),
+		Version:   pulumi.String(chartVersion),
 		Values: pulumi.Map{
 			"global": pulumi.Map{
 				"leaderElection": pulumi.Map{
@@ -120,6 +126,14 @@ func NewCertManagerHelmReleaseArgs(kind bool) *helmv3.ReleaseArgs {
 			},
 			"webhook": pulumi.Map{
 				"replicaCount": pulumi.Int(3),
+				"config": pulumi.Map{
+					"apiVersion": pulumi.String("webhook.config.cert-manager.io/v1alpha1"),
+					"kind":       pulumi.String("WebhookConfiguration"),
+					"logging": pulumi.Map{
+						"format":    pulumi.String("json"),
+						"verbosity": pulumi.Int(5), // Debug
+					},
+				},
 				"strategy": pulumi.Map{
 					"type": pulumi.String("RollingUpdate"),
 					"rollingUpdate": pulumi.Map{
@@ -133,5 +147,21 @@ func NewCertManagerHelmReleaseArgs(kind bool) *helmv3.ReleaseArgs {
 			},
 		},
 	}
-	return releaseArgs
+	return chartArgs
+}
+
+// newCertManagerNamespace creates a Namespace for cert-manager to be installed in.
+func newCertManagerNamespace(ctx *pulumi.Context) (*corev1.Namespace, error) {
+	ns, err := corev1.NewNamespace(ctx, chartNamespace, &corev1.NamespaceArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name: pulumi.String(chartNamespace),
+			Labels: pulumi.StringMap{
+				"app": pulumi.String(helmChartName),
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ns, nil
 }
