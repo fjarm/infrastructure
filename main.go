@@ -13,7 +13,9 @@ const (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		k8sProvider, err := kubernetes.NewProvider(ctx, k8sProviderLogicalNamePrefix, nil)
+		k8sProvider, err := kubernetes.NewProvider(ctx, k8sProviderLogicalNamePrefix, &kubernetes.ProviderArgs{
+			//RenderYamlToDirectory: pulumi.String("yaml"),
+		})
 		if err != nil {
 			return err
 		}
