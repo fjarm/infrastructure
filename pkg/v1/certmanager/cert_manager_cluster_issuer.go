@@ -97,6 +97,11 @@ func newCertManagerInternalClusterIssuerArgs() *apiextensions.CustomResourceArgs
 		Metadata: metav1.ObjectMetaArgs{
 			Name:      pulumi.String(InternalClusterIssuerName),
 			Namespace: pulumi.String(chartNamespace),
+			Annotations: pulumi.StringMap{
+				"config.kubernetes.io/depends-on": pulumi.String(
+					"/namespaces/cert-manager/Deployment/cert-manager-webhook",
+				),
+			},
 		},
 		OtherFields: map[string]any{
 			"spec": map[string]any{
