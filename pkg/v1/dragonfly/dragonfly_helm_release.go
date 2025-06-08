@@ -113,7 +113,7 @@ func newDragonflyHelmChartArgs(ns *corev1.Namespace) *helmv4.ChartArgs {
 			},
 			"podAnnotations": pulumi.StringMap{
 				"config.kubernetes.io/depends-on": pulumi.String(
-					fmt.Sprintf("/namespaces/dragonfly/Secret/%s", certificateName),
+					fmt.Sprintf("/namespaces/%s/Secret/%s", chartNamespace, certificateName),
 				),
 			},
 			"replicaCount": pulumi.Int(1),
