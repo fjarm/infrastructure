@@ -1,0 +1,3 @@
+config:
+  certmanager:kind: "true"
+  dragonfly:kind: "true"

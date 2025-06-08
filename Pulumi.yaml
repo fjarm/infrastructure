@@ -1,0 +1,7 @@
+name: infrastructure
+description: A minimal Go pulumi program to deploy Fjarm k8s infrastructure
+runtime: go
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: go
