@@ -8,7 +8,6 @@ import (
 	helmv4 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v4"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
-	"time"
 )
 
 const (
@@ -76,7 +75,7 @@ func newDragonflyHelmChartArgs(ns *corev1.Namespace) *helmv4.ChartArgs {
 			"extraArgs": pulumi.StringArray{
 				pulumi.String("--cluster_mode=emulated"),
 				pulumi.String("--admin_port=8000"),
-				pulumi.String(fmt.Sprintf("--dbfilename=my-dump-%s", time.Now().Format(time.RFC3339))),
+				pulumi.String("--dbfilename=dragonfly-data-dump"),
 				pulumi.String("--snapshot_cron=0 * * * *"), // Snapshot every hour
 				// TODO(2025-06-06): Update this to be more secure
 				pulumi.String("--requirepass=password"),
