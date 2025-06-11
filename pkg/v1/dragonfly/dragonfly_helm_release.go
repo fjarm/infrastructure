@@ -18,6 +18,8 @@ const (
 	exportDragonflyNamespace = "dragonflyNamespace"
 	exportDragonflyStatus    = "dragonflyStatus"
 	helmChartName            = "dragonfly"
+	healthProbeMountPath     = "/scripts"
+	probeFileMode            = 0744
 	tlsMountPath             = "/etc/dragonfly/tls"
 )
 
@@ -43,7 +45,12 @@ func DeployDragonfly(ctx *pulumi.Context, provider *kubernetes.Provider, deps []
 		return err
 	}
 
-	chartArgs := newDragonflyHelmChartArgs(ns)
+	cm, err := newDragonflyProbeScript(ctx, ns)
+	if err != nil {
+		return err
+	}
+
+	chartArgs := newDragonflyHelmChartArgs(ns, cm)
 	dragonflyChart, err := helmv4.NewChart(
 		ctx,
 		helmChartName,
@@ -62,7 +69,12 @@ func DeployDragonfly(ctx *pulumi.Context, provider *kubernetes.Provider, deps []
 }
 
 // newDragonflyHelmChartArgs constructs the Helm chart values needed to deploy DragonflyDB to k8s.
-func newDragonflyHelmChartArgs(ns *corev1.Namespace) *helmv4.ChartArgs {
+func newDragonflyHelmChartArgs(ns *corev1.Namespace, cm *corev1.ConfigMap) *helmv4.ChartArgs {
+	probeCommand := pulumi.StringArray{
+		pulumi.String("/bin/sh"),
+		pulumi.String(fmt.Sprintf("%s/%s", healthProbeMountPath, "custom-healthcheck.sh")),
+	}
+
 	chartArgs := &helmv4.ChartArgs{
 		Chart:     pulumi.String(chartRepo),
 		Namespace: ns.Metadata.Name(),
@@ -104,11 +116,22 @@ func newDragonflyHelmChartArgs(ns *corev1.Namespace) *helmv4.ChartArgs {
 						"secretName": pulumi.String(certificateName),
 					},
 				},
+				pulumi.Map{
+					"name": pulumi.String("healthcheck"),
+					"configMap": pulumi.Map{
+						"name":        cm.Metadata.Name(),
+						"defaultMode": pulumi.Int(probeFileMode),
+					},
+				},
 			},
 			"extraVolumeMounts": pulumi.MapArray{
 				pulumi.Map{
 					"name":      pulumi.String("tls"),
 					"mountPath": pulumi.String(tlsMountPath),
+				},
+				pulumi.Map{
+					"name":      pulumi.String("healthcheck"),
+					"mountPath": pulumi.String(healthProbeMountPath),
 				},
 			},
 			"podAnnotations": pulumi.StringMap{
@@ -122,9 +145,44 @@ func newDragonflyHelmChartArgs(ns *corev1.Namespace) *helmv4.ChartArgs {
 					"memory": pulumi.String("2Gi"),
 				},
 			},
+			"probes": pulumi.Map{
+				"livenessProbe": pulumi.Map{
+					"exec": pulumi.Map{
+						"command": probeCommand,
+					},
+				},
+				"readinessProbe": pulumi.Map{
+					"exec": pulumi.Map{
+						"command": probeCommand,
+					},
+				},
+			},
 		},
 	}
 	return chartArgs
+}
+
+// newDragonflyProbeScript creates a new script in the Dragonfly DB Pod that can be used to conduct a health check on an
+// instance with TLS enabled.
+func newDragonflyProbeScript(ctx *pulumi.Context, ns *corev1.Namespace) (*corev1.ConfigMap, error) {
+	configMapArgs := &corev1.ConfigMapArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name:      pulumi.String("dragonfly-probe"),
+			Namespace: ns.Metadata.Name(),
+		},
+		Data: pulumi.StringMap{
+			"custom-healthcheck.sh": pulumi.String(healthProbe),
+		},
+	}
+	configMap, err := corev1.NewConfigMap(
+		ctx,
+		fmt.Sprintf("dragonfly-probe-%s", chartNamespace),
+		configMapArgs,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return configMap, nil
 }
 
 // newDragonflyNamespace creates a Namespace for DragonflyDB to be installed in.
