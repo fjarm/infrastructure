@@ -70,6 +70,11 @@ func DeployDragonfly(ctx *pulumi.Context, provider *kubernetes.Provider, deps []
 
 // newDragonflyHelmChartArgs constructs the Helm chart values needed to deploy DragonflyDB to k8s.
 func newDragonflyHelmChartArgs(ns *corev1.Namespace, cm *corev1.ConfigMap) *helmv4.ChartArgs {
+	probeCommand := pulumi.StringArray{
+		pulumi.String("/bin/sh"),
+		pulumi.String(fmt.Sprintf("%s/%s", healthProbeMountPath, "custom-healthcheck.sh")),
+	}
+
 	chartArgs := &helmv4.ChartArgs{
 		Chart:     pulumi.String(chartRepo),
 		Namespace: ns.Metadata.Name(),
@@ -143,18 +148,12 @@ func newDragonflyHelmChartArgs(ns *corev1.Namespace, cm *corev1.ConfigMap) *helm
 			"probes": pulumi.Map{
 				"livenessProbe": pulumi.Map{
 					"exec": pulumi.Map{
-						"command": pulumi.StringArray{
-							pulumi.String("/bin/sh"),
-							pulumi.String(fmt.Sprintf("%s/%s", healthProbeMountPath, "custom-healthcheck.sh")),
-						},
+						"command": probeCommand,
 					},
 				},
 				"readinessProbe": pulumi.Map{
 					"exec": pulumi.Map{
-						"command": pulumi.StringArray{
-							pulumi.String("/bin/sh"),
-							pulumi.String(fmt.Sprintf("%s/%s", healthProbeMountPath, "custom-healthcheck.sh")),
-						},
+						"command": probeCommand,
 					},
 				},
 			},
