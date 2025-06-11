@@ -19,6 +19,7 @@ const (
 	exportDragonflyStatus    = "dragonflyStatus"
 	helmChartName            = "dragonfly"
 	healthProbeMountPath     = "/scripts"
+	probeFileMode            = 0744
 	tlsMountPath             = "/etc/dragonfly/tls"
 )
 
@@ -114,7 +115,7 @@ func newDragonflyHelmChartArgs(ns *corev1.Namespace, cm *corev1.ConfigMap) *helm
 					"name": pulumi.String("healthcheck"),
 					"configMap": pulumi.Map{
 						"name":        cm.Metadata.Name(),
-						"defaultMode": pulumi.Int(0744),
+						"defaultMode": pulumi.Int(probeFileMode),
 					},
 				},
 			},
