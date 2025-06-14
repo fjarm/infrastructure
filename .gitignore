@@ -30,3 +30,4 @@ go.work.sum
 *.yaml
 !Pulumi.dev.yaml
 !Pulumi.yaml
+!kind-config.yaml
