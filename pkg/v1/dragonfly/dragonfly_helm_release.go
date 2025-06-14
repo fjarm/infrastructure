@@ -86,9 +86,11 @@ func newDragonflyHelmChartArgs(ns *corev1.Namespace, cm *corev1.ConfigMap) *helm
 			},
 			"extraArgs": pulumi.StringArray{
 				pulumi.String("--cluster_mode=emulated"),
+				pulumi.String("--bind=127.0.0.1"), // IPv4 loopback interface
 				pulumi.String("--admin_port=8000"),
-				pulumi.String("--dbfilename=dragonfly-data-dump"),
-				pulumi.String("--snapshot_cron=0 * * * *"), // Snapshot every hour
+				pulumi.String("--dir=/data"),
+				pulumi.String("--dbfilename=dragonfly-data-dump-{timestamp}"),
+				pulumi.String("--snapshot_cron=0 * * * *"), // Snapshot at minute 0 of every hour
 				// TODO(2025-06-06): Update this to be more secure
 				pulumi.String("--requirepass=password"),
 				pulumi.String("--tls"),
