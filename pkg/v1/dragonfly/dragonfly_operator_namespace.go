@@ -11,8 +11,8 @@ const (
 	operatorNamespace = "dragonfly-operator"
 )
 
-// newDragonflyOperatorNamespace creates the `dragonfly-operator` namespace.
-func newDragonflyOperatorNamespace(
+// deployDragonflyOperatorNamespace creates the `dragonfly-operator` namespace.
+func deployDragonflyOperatorNamespace(
 	ctx *pulumi.Context,
 	provider *kubernetes.Provider,
 ) (*corev1.Namespace, error) {

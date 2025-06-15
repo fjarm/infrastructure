@@ -23,7 +23,7 @@ func DeployDragonflyOperatorHelmChart(
 	provider *kubernetes.Provider,
 	deps []pulumi.Resource,
 ) ([]pulumi.Resource, error) {
-	ns, err := newDragonflyOperatorNamespace(ctx, provider)
+	ns, err := deployDragonflyOperatorNamespace(ctx, provider)
 	if err != nil {
 		return nil, err
 	}
