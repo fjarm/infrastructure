@@ -23,11 +23,11 @@ func DeployDragonflyOperatorHelmChart(
 	provider *kubernetes.Provider,
 	deps []pulumi.Resource,
 ) ([]pulumi.Resource, error) {
-	ns, err := deployDragonflyOperatorNamespace(ctx, provider)
+	dragonflyOperatorNamespace, err := deployDragonflyOperatorNamespace(ctx, provider)
 	if err != nil {
 		return nil, err
 	}
-	chartArgs := newDragonflyOperatorHelmChartArgs(ns)
+	chartArgs := newDragonflyOperatorHelmChartArgs(dragonflyOperatorNamespace)
 	chart, err := helmv4.NewChart(
 		ctx,
 		operatorChartName,
@@ -39,9 +39,23 @@ func DeployDragonflyOperatorHelmChart(
 		return nil, err
 	}
 
-	ctx.Export("dragonflyOperatorNamespace", ns.Metadata.Name())
+	dragonflyClusterNamespace, err := deployDragonflyClusterNamespace(ctx, provider)
+	if err != nil {
+		return nil, err
+	}
+	dragonflyCluster, err := deployDragonflyCluster(
+		ctx,
+		dragonflyClusterNamespace,
+		provider,
+		[]pulumi.Resource{chart},
+	)
+	if err != nil {
+		return nil, err
+	}
 
-	return []pulumi.Resource{ns, chart}, nil
+	ctx.Export("dragonflyOperatorNamespace", dragonflyOperatorNamespace.Metadata.Name())
+
+	return []pulumi.Resource{dragonflyOperatorNamespace, chart, dragonflyClusterNamespace, dragonflyCluster}, nil
 }
 
 // newDragonflyOperatorHelmChartArgs returns the Helm chart args used to deploy the Dragonfly Operator using the Helm
