@@ -70,9 +70,11 @@ func newDragonflyClusterArgs(
 					},
 				},
 				"args": pulumi.StringArray{
-					pulumi.String("--cluster_mode=yes"),
 					pulumi.String("--bind=127.0.0.1"), // IPv4 loopback interface
-					pulumi.String("--admin_port=8000"),
+					// SEE: https://github.com/dragonflydb/dragonfly-operator/blob/c70f578b5c64372ca41718be830e0629f2f144ef/internal/resources/resources.go#L114-L115
+					// SEE: https://github.com/dragonflydb/dragonfly-operator/blob/3425e0b0623f785084f0cf1463bc58ca379bf408/internal/resources/const.go#L101
+					// Dragonfly hard-codes HEALTHCHECK_PORT and --admin_port to 9999 and overrides don't work.
+					//pulumi.String("--admin_port=9999"),
 					pulumi.String("--dir=/data"),
 					pulumi.String("--dbfilename=dragonfly-dump"), // No {timestamp} macro to not create multiple files that consume space on the volume.
 					pulumi.String("--snapshot_cron=0 * * * *"),   // Snapshot at minute 0 of every hour
