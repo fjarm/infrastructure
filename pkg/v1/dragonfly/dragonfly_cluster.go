@@ -24,7 +24,12 @@ func deployDragonflyCluster(
 	provider *kubernetes.Provider,
 	deps []pulumi.Resource,
 ) (pulumi.Resource, error) {
-	clusterArgs := newDragonflyClusterArgs(namespace)
+	aclSecret, err := deployDragonflyClusterACLSecret(ctx, namespace, provider, deps)
+	if err != nil {
+		return nil, err
+	}
+
+	clusterArgs := newDragonflyClusterArgs(namespace, aclSecret)
 	cluster, err := apiextensions.NewCustomResource(
 		ctx,
 		clusterName,
@@ -41,6 +46,7 @@ func deployDragonflyCluster(
 // newDragonflyClusterArgs returns the Dragonfly cluster spec that will be converted to YAML and applied to the cluster.
 func newDragonflyClusterArgs(
 	namespace *corev1.Namespace,
+	aclSecret *corev1.Secret,
 ) *apiextensions.CustomResourceArgs {
 	return &apiextensions.CustomResourceArgs{
 		ApiVersion: pulumi.String(dragonflyCRDAPIVersion),
@@ -78,6 +84,10 @@ func newDragonflyClusterArgs(
 					pulumi.String("--dir=/data"),
 					pulumi.String("--dbfilename=dragonfly-dump"), // No {timestamp} macro to not create multiple files that consume space on the volume.
 					pulumi.String("--snapshot_cron=0 * * * *"),   // Snapshot at minute 0 of every hour
+				},
+				"aclFromSecret": pulumi.Map{
+					"key":  pulumi.String(clusterACLSecretName),
+					"name": aclSecret.Metadata.Name(),
 				},
 			},
 		},
