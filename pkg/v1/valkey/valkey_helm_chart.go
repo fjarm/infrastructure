@@ -92,11 +92,13 @@ func newValkeyClusterHelmChartArgs(
 			},
 			"sentinel": pulumi.Map{
 				"enabled": pulumi.Bool(true),
-				//"annotations": pulumi.Map{
-				//	"config.kubernetes.io/depends-on": pulumi.String(
-				//		fmt.Sprintf("/namespaces/%s/Secret/%s", clusterNamespace, clusterCertificateSecretName),
-				//	),
-				//},
+			},
+			"tls": pulumi.Map{
+				"enabled":         pulumi.Bool(true),
+				"existingSecret":  pulumi.String(clusterCertificateSecretName),
+				"certFilename":    pulumi.String("tls.crt"),
+				"certKeyFilename": pulumi.String("tls.key"),
+				"certCAFilename":  pulumi.String("ca.crt"),
 			},
 		},
 	}
