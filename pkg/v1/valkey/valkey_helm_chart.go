@@ -92,6 +92,16 @@ func newValkeyClusterHelmChartArgs(
 			},
 			"sentinel": pulumi.Map{
 				"enabled": pulumi.Bool(true),
+				"resources": pulumi.Map{
+					"limits": pulumi.Map{
+						"cpu":    pulumi.String("600m"),
+						"memory": pulumi.String("750Mi"),
+					},
+					"requests": pulumi.Map{
+						"cpu":    pulumi.String("500m"),
+						"memory": pulumi.String("500Mi"),
+					},
+				},
 			},
 			"tls": pulumi.Map{
 				"enabled":         pulumi.Bool(true),
