@@ -40,19 +40,19 @@ func DeployValkeyCluster(
 		return nil, err
 	}
 
-	aclContent, err := newValkeyUserACL(
-		// TODO(2025-06-30): Add support to the template for creating users with no password
-		&valkeyUser{
-			Username:        "test",
-			Password:        "test",
-			EnabledCommands: []string{"+AUTH", "+PING", "+GET", "+SET", "~*"},
+	commonConfig := &valkeyConfig{
+		DefaultUserCredentials:  "somepassword",
+		SentinelUserCredentials: "somepassword",
+		ReplicaUserCredentials:  "somepassword",
+		Users: []*valkeyUser{
+			{
+				Username:        "test",
+				Password:        "test",
+				EnabledCommands: []string{"+AUTH", "+ACL", "+PING", "+GET", "+SET", "~*"},
+			},
 		},
-		&valkeyUser{
-			Username:        "default",
-			Password:        "password",
-			EnabledCommands: []string{"+@ALL", "~*"},
-		},
-	)
+	}
+	configContent, err := newValkeyCommonConfig(commonConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,8 @@ func DeployValkeyCluster(
 	chart, err := deployValkeyClusterHelmChart(
 		ctx,
 		namespace,
-		aclContent,
+		commonConfig,
+		configContent,
 		provider,
 		append(deps, namespace, cert),
 	)
@@ -75,11 +76,12 @@ func DeployValkeyCluster(
 func deployValkeyClusterHelmChart(
 	ctx *pulumi.Context,
 	namespace *corev1.Namespace,
+	commonConfig *valkeyConfig,
 	aclContent string,
 	provider *kubernetes.Provider,
 	deps []pulumi.Resource,
 ) (pulumi.Resource, error) {
-	args := newValkeyClusterHelmChartArgs(namespace, aclContent)
+	args := newValkeyClusterHelmChartArgs(namespace, commonConfig, aclContent)
 
 	chart, err := helmv4.NewChart(
 		ctx,
@@ -97,6 +99,7 @@ func deployValkeyClusterHelmChart(
 // newValkeyClusterHelmChartArgs constructs the Helm chart values needed to deploy Valkey to k8s.
 func newValkeyClusterHelmChartArgs(
 	namespace *corev1.Namespace,
+	commonConfig *valkeyConfig,
 	aclContent string,
 ) *helmv4.ChartArgs {
 	chartArgs := &helmv4.ChartArgs{
@@ -106,8 +109,10 @@ func newValkeyClusterHelmChartArgs(
 		Values: pulumi.Map{
 			"architecture": pulumi.String("replication"),
 			"auth": pulumi.Map{
-				"enabled":  pulumi.Bool(true),
-				"password": pulumi.String("password"),
+				"enabled": pulumi.Bool(true),
+				// The password for the default user
+				// TODO(2025-07-05): Enable supplying a custom password for the default user.
+				"password": pulumi.String(commonConfig.DefaultUserCredentials),
 			},
 			"commonConfiguration": pulumi.String(aclContent),
 			"image": pulumi.Map{

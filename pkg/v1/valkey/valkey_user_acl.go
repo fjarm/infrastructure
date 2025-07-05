@@ -11,15 +11,32 @@ import (
 var ErrTemplateParsingError = fmt.Errorf("error parsing ACL file template")
 
 const configTemplate = `
+# SEE: https://valkey.io/topics/acl/
+user default on >{{ .DefaultUserCredentials }} allchannels +multi +slaveof +ping +exec +subscribe +config|rewrite +role +publish +info +client|setname +client|kill +script|kill
+user sentinel-user on >{{ .SentinelUserCredentials }} allchannels +multi +slaveof +ping +exec +subscribe +config|rewrite +role +publish +info +client|setname +client|kill +script|kill
+user replica-user on >{{ .ReplicaUserCredentials }} +psync +replconf +ping
+
 {{ range $index, $user := .Users }}
 user {{ $user.Username }} on >{{ $user.Password }} -@ALL {{ range $cmd := $user.EnabledCommands }}{{ $cmd }} {{ end }}
 {{ end }}
 
-# Enable AOF https://valkey.io/docs/topics/persistence.html
-appendonly yes
-# Disable RDB persistence, AOF persistence already enabled.
-save ""
+# Disable AOF https://valkey.io/docs/topics/persistence.html
+appendonly no
+
+# Enable RDB persistence, AOF persistence is disabled.
+# Unless specified otherwise, by default the server will save the DB:
+#   * After 3600 seconds (an hour) if at least 1 change was performed
+#   * After 300 seconds (5 minutes) if at least 100 changes were performed
+#   * After 60 seconds if at least 10000 changes were performed
+save 3600 1 300 100 60 10000
 `
+
+type valkeyConfig struct {
+	DefaultUserCredentials  string
+	SentinelUserCredentials string
+	ReplicaUserCredentials  string
+	Users                   []*valkeyUser
+}
 
 // valkeyUser describes a user in the Valkey ACL file and their allowed commands. All users start with -@ALL by default.
 type valkeyUser struct {
@@ -28,22 +45,17 @@ type valkeyUser struct {
 	EnabledCommands []string
 }
 
-// newValkeyUserACL uses text templating to compose the contents of an ACL file as a string.
-func newValkeyUserACL(
-	users ...*valkeyUser,
+// newValkeyCommonConfig uses text templating to compose the contents of an ACL file as a string.
+func newValkeyCommonConfig(
+	cfg *valkeyConfig,
 ) (string, error) {
-	tmp, err := template.New("valkey.acl").Parse(configTemplate)
+	tmp, err := template.New("valkey.conf").Parse(configTemplate)
 	if err != nil {
 		return "", err
 	}
 
-	templateData := struct {
-		Users []*valkeyUser
-	}{
-		Users: users,
-	}
 	templateDestination := bytes.NewBuffer(nil)
-	err = tmp.Execute(templateDestination, &templateData)
+	err = tmp.Execute(templateDestination, cfg)
 	if err != nil {
 		return "", err
 	}
