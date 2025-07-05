@@ -8,11 +8,10 @@ import (
 )
 
 const (
-	clusterAppLabel   = "valkey"
-	clusterAppVersion = "8.1.2"
-	chartName         = "valkey"
-	chartRepo         = "oci://registry-1.docker.io/bitnamicharts/valkey"
-	chartVersion      = "3.0.16"
+	clusterAppLabel = "valkey"
+	chartName       = "valkey"
+	chartRepo       = "oci://registry-1.docker.io/bitnamicharts/valkey"
+	chartVersion    = "3.0.16"
 )
 
 // DeployValkeyCluster sets up the required resources needed to run Valkey including a namespace, TLS certificate, and
@@ -111,8 +110,14 @@ func newValkeyClusterHelmChartArgs(
 				"password": pulumi.String("password"),
 			},
 			"commonConfiguration": pulumi.String(aclContent),
+			"image": pulumi.Map{
+				"digest": pulumi.String("sha256:0384ca2eec63789450b2e07a00f377c2c9d0b548c2e346e1003bc0dd629fa71a"),
+			},
 			"sentinel": pulumi.Map{
 				"enabled": pulumi.Bool(true),
+				"image": pulumi.Map{
+					"digest": pulumi.String("sha256:071cb353bc17f27492655c710386d5e3afc5c36d8057ea5d48c5886da6f1bc3a"),
+				},
 				"resources": pulumi.Map{
 					"limits": pulumi.Map{
 						"cpu":    pulumi.String("600m"),
