@@ -64,7 +64,7 @@ func newValkeyClusterCertificateArgs(ns *corev1.Namespace) (*apiextensions.Custo
 					pulumi.String("valkey.valkey.svc"),
 					pulumi.String("valkey.valkey"),
 					pulumi.String("valkey"),
-					pulumi.String("'*.valkey-headless.valkey.svc.cluster.local'"),
+					pulumi.String("*.valkey-headless.valkey.svc.cluster.local"),
 					pulumi.String("valkey-headless.valkey.svc.cluster.local"),
 					pulumi.String("valkey-headless.valkey.svc"),
 					pulumi.String("valkey-headless.valkey"),
