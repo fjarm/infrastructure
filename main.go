@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/fjarm/infrastructure/pkg/v1/certmanager"
-	"github.com/fjarm/infrastructure/pkg/v1/dragonfly"
+	"github.com/fjarm/infrastructure/pkg/v1/valkey"
 	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -19,11 +19,19 @@ func main() {
 		if err != nil {
 			return err
 		}
-		deps, err := certmanager.DeployCertManager(ctx, k8sProvider)
+		certManagerDeps, err := certmanager.DeployCertManager(
+			ctx,
+			k8sProvider,
+		)
 		if err != nil {
 			return err
 		}
-		err = dragonfly.DeployDragonfly(ctx, k8sProvider, deps)
+
+		_, err = valkey.DeployValkeyCluster(
+			ctx,
+			k8sProvider,
+			certManagerDeps,
+		)
 		return err
 	})
 }
